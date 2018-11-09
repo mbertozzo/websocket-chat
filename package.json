@@ -13,7 +13,8 @@
   "author": "Matteo Bertozzo",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.16.4"
+    "express": "^4.16.4",
+    "ws": "^6.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.1.5",
