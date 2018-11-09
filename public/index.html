@@ -5,8 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Test App</title>
+  <style>
+    label, input {
+      display: block;
+      margin-bottom: 10px;
+    }
+    button {
+      margin-bottom: 25px;
+    }
+  </style>
 </head>
 <body>
-  <div id="app"></div>
+  <div id="form">
+    <label for="url">Websocket Address</label>
+    <input type="text" name="url" id="url" value="wss://echo.websocket.org/">
+    <button id="connect">Connect</button>
+    <button id="disconnect">Disconnect</button>
+
+    <label for="message">Message</label>
+    <input type="text" name="message" id="message">
+    <button id="send">Send</button>
+  </div>
+  <div id="app">
+
+  </div>
 </body>
 </html>

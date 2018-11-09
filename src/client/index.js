@@ -1,9 +1,13 @@
 const output = document.getElementById('app');
-const url = "wss://echo.websocket.org/";
+const btnConnect = document.getElementById('connect');
+const btnDisconnect = document.getElementById('disconnect');
+const sendMsg = document.getElementById('send');
+let websocket = null;
+
+// const url = "wss://echo.websocket.org/";
 
 const onOpen = (e) => {
   writeToScreen("CONNECTED");
-  doSend('Hello from WebSocket!');
 }
 
 const onClose = (e) => {
@@ -12,7 +16,6 @@ const onClose = (e) => {
 
 const onMessage = (e) => {
   writeToScreen('<span style="color: blue;">RESPONSE: ' + e.data+'</span>');
-  websocket.close();
 }
 
 const onError = (e) => {
@@ -39,4 +42,19 @@ const init = (wsUri) => {
   websocket.onerror = (evt) => onError(evt);
 }
 
-document.addEventListener('load', init(url), false);
+btnConnect.addEventListener('click', () => {
+  const url = document.getElementById('url').value;
+  init(url)
+});
+
+btnDisconnect.addEventListener('click', () => {
+  websocket.close();
+})
+
+sendMsg.addEventListener('click', () => {
+  const message = document.getElementById('message').value;
+  console.log('Aloha from send')
+  console.log(message);
+  doSend(message);
+})
+
