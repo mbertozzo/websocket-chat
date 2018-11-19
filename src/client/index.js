@@ -1,60 +1,97 @@
-const output = document.getElementById('app');
-const btnConnect = document.getElementById('connect');
-const btnDisconnect = document.getElementById('disconnect');
-const sendMsg = document.getElementById('send');
+const content = document.getElementById('content');
+const input = document.getElementById('input');
+const status = document.getElementById('status');
 let websocket = null;
 
-// const url = "wss://echo.websocket.org/";
+let myColor = false;
+let myName = false;
 
-const onOpen = (e) => {
-  writeToScreen("CONNECTED");
+let json = null;
+
+if(!window.WebSocket) {
+  content.innerHTML = `Sorry, your browser doesn't support WebSocket.`;
 }
 
-const onClose = (e) => {
-  writeToScreen('DISCONNECTED');
+const ws = new WebSocket('ws://localhost:8999');
+
+ws.onopen = (e) => {
+  input.removeAttribute('disabled');
+  status.innerHTML = 'Choose name:';
 }
 
-const onMessage = (e) => {
-  writeToScreen('<span style="color: blue;">RESPONSE: ' + e.data+'</span>');
+ws.onerror = (e) => {
+  const text = document.createElement('p');
+  const innerNode = document.createTextNode(`Sorry, there's a problem with your connection or the server is down.`);
+  
+  text.appendChild(innerNode);
+  content.appendChild(text);
 }
 
-const onError = (e) => {
-  writeToScreen('<span style="color: red;">ERROR:</span> ' + e.data);
+ws.onmessage = (e) => {
+  try {
+    json = JSON.parse(e.data);
+  } catch (e) {
+    console.log('Invalid JSON: ', e.data);
+    return;
+  }
+
+  if(json.type === 'color'){
+    myColor = json.data;
+    status.innerHTML = (myName + ': ');
+    status.style.color= myColor;
+    input.focus();
+  } else if (json.type === 'history'){
+    json.data.map(msg => {
+      addMessage(msg.author, msg.text,
+        msg.color, new Date(msg.time));
+    })
+  } else if(json.type === 'message'){
+      addMessage(json.data.author, json.data.text,
+        json.data.color, new Date(json.data.time));
+  } else {
+    console.log('Provided JSON not recognised', json);
+  }
 }
 
-const doSend = (msg) => {
-  writeToScreen(msg);
-  websocket.send(msg);
+ws.onClose = (e) => {
+  content.innerHTML = 'Closed';
 }
 
-const writeToScreen = (msg) => {
-  let pre = document.createElement("p");
-  pre.style.wordWrap = "break-word";
-  pre.innerHTML = msg;
-  output.appendChild(pre);
-}
 
-const init = (wsUri) => {
-  websocket = new WebSocket(wsUri)
-  websocket.onopen = (evt) => onOpen(evt);
-  websocket.onclose = (evt) => onClose(evt);
-  websocket.onmessage = (evt) => onMessage(evt);
-  websocket.onerror = (evt) => onError(evt);
-}
+input.addEventListener('keydown', (e) => {
+  if (e.keyCode === 13) {
+    var msg = e.target.value;
+    if (!msg) {
+        return;
+    }
+    // send the message as an ordinary text
+    ws.send(msg);
+    e.target.value = '';
 
-btnConnect.addEventListener('click', () => {
-  const url = document.getElementById('url').value;
-  init(url)
+    // the first message sent from a user is his name
+    if (myName === false) {
+        myName = msg;
+    }
+  }
 });
 
-btnDisconnect.addEventListener('click', () => {
-  websocket.close();
-})
+const addMessage = (author, message, color, dt) => {
+  const msgParagraph = document.createElement('p');
+  const authorSpan = document.createElement('span');
+  const authorNode = document.createTextNode(author);
+  const msgContent = document.createTextNode(' @ ' 
+    + (dt.getHours() < 10 ? '0'
+    + dt.getHours() : dt.getHours()) + ':'
+    + (dt.getMinutes() < 10
+      ? '0' + dt.getMinutes() : dt.getMinutes())
+    + ': ' + message
+  );
 
-sendMsg.addEventListener('click', () => {
-  const message = document.getElementById('message').value;
-  console.log('Aloha from send')
-  console.log(message);
-  doSend(message);
-})
+  authorSpan.appendChild(authorNode);
+  authorSpan.style.color = color;
 
+  msgParagraph.appendChild(authorSpan);
+  msgParagraph.appendChild(msgContent);
+
+  content.prepend(msgParagraph);
+}

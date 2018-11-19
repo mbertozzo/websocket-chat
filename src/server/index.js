@@ -2,42 +2,73 @@ var express = require('express');
 var http = require('http');
 var WebSocket = require('ws');
 
+//initializign HTTP server
 var app = express();
-
-//initialize a simple http server
 var server = http.createServer(app);
 
-//initialize the WebSocket server instance
+//initializing WebSocket Server instance
 var wss = new WebSocket.Server({ server });
 
-wss.on('connection', (ws) => {
+//helper variables
+var history = [];
+var htmlEntities = (str) => {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+var colors = [ 'red', 'green', 'blue', 'magenta', 'purple', 'plum', 'orange' ];
+colors.sort((a,b) => { return Math.random() > 0.5; } );
 
-    //connection is up, let's add a simple simple event
+//accepting WS connection
+wss.on('connection', (ws, req) => {
+    const ip = req.connection.remoteAddress;
+    var userName = false;
+    var userColor = false;
+
+    if (history.length > 0) {
+        ws.send(JSON.stringify({ type: 'history', data: history} ));
+    }
+
+    //connection is up
     ws.on('message', (message) => {
+        if (userName === false) { // first message sent by user is their name
+            // remember user name
+            userName = message;
+            // get random color and send it back to the user
+            userColor = colors.shift();
+            ws.send(JSON.stringify({ type:'color', data: userColor }));
+            console.log((new Date()) + ' User is known as: ' + userName
+                        + ' with ' + userColor + ' color.');
 
-        //log the received message and send it back to the client
-        console.log('received: %s', message);
-
-        const broadcastRegex = /^broadcast\:/;
-
-        if (broadcastRegex.test(message)) {
-            message = message.replace(broadcastRegex, '');
-
-            //send back the message to the other clients
-            wss.clients
-                .forEach(client => {
-                    if (client != ws) {
-                        client.send(`Hello, broadcast message -> ${message}`);
-                    }    
-                });
+        } else { // log and broadcast the message
+            console.log((new Date()) + ' Received Message from '
+                        + userName + ': ' + message);
             
-        } else {
-            ws.send(`Hello, you sent -> ${message}`);
+            // we want to keep history of all sent messages
+            var obj = {
+                time: (new Date()).getTime(),
+                text: htmlEntities(message),
+                author: userName,
+                color: userColor
+            };
+            history.push(obj);
+            history = history.slice(-100);
+
+            // broadcast message to all connected clients
+            var json = JSON.stringify({ type:'message', data: obj });
+            wss.clients.forEach(client => {
+                client.send(json);
+            });
         }
     });
 
-    //send immediatly a feedback to the incoming connection    
-    ws.send('Hi there, I am a WebSocket server');
+    ws.on('close', (ip) => {
+        if (userName !== false && userColor !== false) {
+          console.log((new Date()) + " Peer "
+              + ip + " disconnected.");
+          // push back user's color to be reused by another user
+          colors.push(userColor);
+        }
+      });
+
 });
 
 //start our server
