@@ -57,14 +57,13 @@ ws.onClose = (e) => {
   content.innerHTML = 'Closed';
 }
 
-
 input.addEventListener('keydown', (e) => {
   if (e.keyCode === 13) {
     var msg = e.target.value;
     if (!msg) {
         return;
     }
-    // send the message as an ordinary text
+    // send the message as an ordinary text and reset input value
     ws.send(msg);
     e.target.value = '';
 

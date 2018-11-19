@@ -1,27 +1,26 @@
-var express = require('express');
-var http = require('http');
-var WebSocket = require('ws');
+const express = require('express');
+const http = require('http');
+const WebSocket = require('ws');
 
-//initializign HTTP server
-var app = express();
-var server = http.createServer(app);
+//initializing HTTP server
+const app = express();
+const server = http.createServer(app);
 
 //initializing WebSocket Server instance
-var wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server });
 
 //helper variables
-var history = [];
-var htmlEntities = (str) => {
+let history = [];
+const htmlEntities = (str) => {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
-var colors = [ 'red', 'green', 'blue', 'magenta', 'purple', 'plum', 'orange' ];
-colors.sort((a,b) => { return Math.random() > 0.5; } );
+const colors = [ 'red', 'green', 'blue', 'magenta', 'purple', 'plum', 'orange' ];
 
 //accepting WS connection
 wss.on('connection', (ws, req) => {
     const ip = req.connection.remoteAddress;
-    var userName = false;
-    var userColor = false;
+    let userName = false;
+    let userColor = false;
 
     if (history.length > 0) {
         ws.send(JSON.stringify({ type: 'history', data: history} ));
@@ -43,7 +42,7 @@ wss.on('connection', (ws, req) => {
                         + userName + ': ' + message);
             
             // we want to keep history of all sent messages
-            var obj = {
+            const obj = {
                 time: (new Date()).getTime(),
                 text: htmlEntities(message),
                 author: userName,
@@ -53,7 +52,7 @@ wss.on('connection', (ws, req) => {
             history = history.slice(-100);
 
             // broadcast message to all connected clients
-            var json = JSON.stringify({ type:'message', data: obj });
+            const json = JSON.stringify({ type:'message', data: obj });
             wss.clients.forEach(client => {
                 client.send(json);
             });
